@@ -26,11 +26,11 @@ namespace MMORPG_Boss_Timer.MasterTable
             }
         }
 
-        static public IEnumerator GetEnumerator()
+        static public Dictionary<int, MasterData_BossGenerateData>.Enumerator GetEnumerator()
         {
             if (s_instnace != null && s_instnace.m_dic != null)
                 return s_instnace.m_dic.GetEnumerator();
-            return null;
+            return new Dictionary<int, MasterData_BossGenerateData>.Enumerator();
         }
 
         static public void LoadTable()

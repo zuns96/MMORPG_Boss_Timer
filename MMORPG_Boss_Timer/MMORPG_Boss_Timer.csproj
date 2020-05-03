@@ -75,6 +75,7 @@
     <Compile Include="BossTimerData\BossGenerateData.cs" />
     <Compile Include="MasterTable\MasterData_BossGenerateData.cs" />
     <Compile Include="BossTimer.cs" />
+    <Compile Include="ZLibrary\MultiThread.cs" />
     <Compile Include="ZLibrary\Debug\LogDefine.cs" />
     <Compile Include="ZLibrary\Define.cs" />
     <Compile Include="DiscordClient.cs" />

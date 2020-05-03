@@ -17,8 +17,6 @@ namespace Discord_Bot
         protected bool m_successInitialize = false;
         private List<SocketGuild> m_guild = null;
 
-        protected Action<DateTime> m_updateTimeEvent = null;
-
         public bool SuccessInitialize { get { return m_successInitialize; } }
 
         static public void Release(ref DiscordClient discordClient)
@@ -66,8 +64,8 @@ namespace Discord_Bot
             m_client.Log += onLog;  // 시스템 로그
 
             m_requestOption = RequestOptions.Default.Clone();
-            m_requestOption.Timeout = 20 * 1000;    // 20초
-            m_requestOption.UseSystemClock = true;
+            //m_requestOption.Timeout = 20 * 1000;    // 20초
+            //m_requestOption.UseSystemClock = true;
 
             m_successInitialize = true;
         }
@@ -78,10 +76,9 @@ namespace Discord_Bot
             await m_client.StartAsync();
         }
 
-        public void Tick(DateTime dateTime)
+        public virtual void Tick(DateTime dateTime)
         {
-            if (m_updateTimeEvent != null)
-                m_updateTimeEvent.Invoke(dateTime);
+            
         }
 
         private Task connected()
@@ -94,8 +91,8 @@ namespace Discord_Bot
                 while(itor.MoveNext())
                 {
                     var guild = itor.Current;
+                    m_guild.Add(guild);
                     Log.WriteLog($"[{idx++}] GuildID : {guild.Id}");
-                    m_guild.Add(itor.Current);
                 }
             }
             Log.WriteLog($"OnConnected 끝");
@@ -141,9 +138,21 @@ namespace Discord_Bot
             return Task.CompletedTask;
         }
 
+        protected void SendMessage(string msg)
+        {
+            int count = m_guild.Count;
+            for(int i = 0; i < count; ++i)
+            {
+                m_guild[i].DefaultChannel.SendMessageAsync($"```{msg}```", false, null, m_requestOption).ContinueWith(task =>
+                {
+                    Log.WriteLog($"{m_client.CurrentUser.Username}({m_client.CurrentUser.Id}) {msg}");
+                });
+            }
+        }
+
         protected void SendMessage(IMessageChannel channel, string msg)
         {
-            channel.SendMessageAsync(msg, false, null, m_requestOption).ContinueWith(task =>
+            channel.SendMessageAsync($"```{msg}```", false, null, m_requestOption).ContinueWith(task =>
             {
                 Log.WriteLog($"{m_client.CurrentUser.Username}({m_client.CurrentUser.Id}) {msg}");
             });

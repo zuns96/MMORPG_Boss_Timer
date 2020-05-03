@@ -53,8 +53,8 @@ namespace ZLibrary.Google
                 foreach (var row in values)
                 {
                     T data = Activator.CreateInstance(typeof(T), row) as T;
-                    Log.WriteLog(data.ToString());
                     dic.Add(data.PID, data);
+                    Log.WriteLog(data.ToString());
                 }
             }
             else

@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Timers;
+//using System.Timers;
+using System.Threading;
 using System.Threading.Tasks;
-using ZLibrary.Google;
 using ZLibrary.Debug;
 
 namespace MMORPG_Boss_Timer
@@ -10,7 +10,8 @@ namespace MMORPG_Boss_Timer
     {
         private static Program s_instance = null;
         private BossTimer m_discordClient = null;
-        private Timer m_timer;
+        //private Timer m_timer;
+        private Task m_timerTask;
 
         static void Main(string[] args)
         {
@@ -44,27 +45,41 @@ namespace MMORPG_Boss_Timer
 
             m_discordClient = new BossTimer();
 
-            setTimer();
-
             if (!m_discordClient.SuccessInitialize)
                 return;
 
             await m_discordClient.Start();
+
+            setTimer();
 
             await Task.Delay(-1);
         }
 
         void setTimer()
         {
-            m_timer = new Timer(1000);
-            m_timer.Elapsed += onTimeEvent;
-            m_timer.AutoReset = true;
-            m_timer.Enabled = true;
+            if (m_timerTask == null)
+            {
+                m_timerTask = new Task(UpdateTime);
+                m_timerTask.Start();
+            }
+            //m_timer = new Timer(1000);
+            //m_timer.Elapsed += onTimeEvent;
+            //m_timer.AutoReset = true;
+            //m_timer.Enabled = true;
         }
 
-        void onTimeEvent(Object source, ElapsedEventArgs e)
+        void UpdateTime()
         {
-            m_discordClient.Tick(e.SignalTime);
+            while(true)
+            {
+                m_discordClient.Tick(DateTime.Now);
+                Thread.Sleep(1000);
+            }
         }
+
+        //void onTimeEvent(Object source, ElapsedEventArgs e)
+        //{
+        //    m_discordClient.Tick(e.SignalTime);
+        //}
     }
 }
