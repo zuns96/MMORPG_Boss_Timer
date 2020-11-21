@@ -49,35 +49,32 @@ namespace MMORPG_Boss_Timer
             bool saveData = false;
 
             long nowSec = dateTime.Ticks / TimeSpan.TicksPerSecond;
-            //lock (m_lstBossData) 
+            //Log.WriteLog("Tick===============================================시작");
+            for (int i = 0; i < m_count; ++i)
             {
-                //Log.WriteLog("Tick===============================================시작");
-                for (int i = 0; i < m_count; ++i)
+                var data = m_lstBossData[i];
+                bool left5Min;
+                bool alarm;
+                bool isGen = data.CheckGenTime(dateTime, nowSec, out left5Min, out alarm);
+                saveData |= isGen;
+                if (alarm)
                 {
-                    var data = m_lstBossData[i];
-                    bool left5Min;
-                    bool alarm;
-                    bool isGen = data.CheckGenTime(dateTime, nowSec, out left5Min, out alarm);
-                    saveData |= isGen;
-                    if (alarm)
+                    if (isGen)
                     {
-                        if (isGen)
-                        {
-                            SendMessage($"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 부활했습니다. 다음 젠 타임 : {data.NextGenTime}");
-                        }
-                        else if (left5Min)
-                        {
-                            SendMessage($"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 부활까지 5분 남았습니다! 다음 젠 타임 : {data.NextGenTime}");
-                        }
+                        SendMessage($"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 부활했습니다. 다음 젠 타임 : {data.NextGenTime}");
+                    }
+                    else if (left5Min)
+                    {
+                        SendMessage($"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 부활까지 5분 남았습니다! 다음 젠 타임 : {data.NextGenTime}");
                     }
                 }
-
-                if (saveData)
-                {
-                    saveJsonData();
-                }
-
             }
+
+            if (saveData)
+            {
+                saveJsonData();
+            }
+
             //Log.WriteLog("Tick===============================================종료");
         }
 

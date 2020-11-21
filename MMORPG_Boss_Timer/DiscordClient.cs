@@ -83,6 +83,8 @@ namespace Discord_Bot
 
         private Task connected()
         {
+            m_guild.Clear();
+
             Log.WriteLog($"OnConnected 시작");
             if(m_client.Guilds != null)
             {
