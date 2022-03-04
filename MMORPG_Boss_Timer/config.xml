@@ -1,0 +1,9 @@
+<config>
+    <app_info AppName="MMORPG_Boss_Timer" token=""/>
+    <option>log_enable</option>
+    <option>save_log</option>
+    <google_spread_sheet>
+        <sheetId></sheetId>
+        <sheetRange></sheetRange>
+    </google_spread_sheet>
+</config>

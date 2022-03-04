@@ -38,29 +38,29 @@ namespace Discord_Bot
 
         public DiscordClient()
         {
-            iniUtil ini = new iniUtil(Define.c_config_path);
+            //iniUtil ini = new iniUtil(Define.c_config_path);
 
-            if (ini == null)
-            {
-                return;
-            }
+            //if (ini == null)
+            //{
+            //    return;
+            //}
 
-            m_token = ini.GetIniValue("app_info", "token");
-            if (string.IsNullOrEmpty(m_token))
-            {
-                return;
-            }
+            //m_token = ini.GetIniValue("app_info", "token");
+            //if (string.IsNullOrEmpty(m_token))
+            //{
+            //    return;
+            //}
 
-            m_client = new DiscordSocketClient();
-            m_guild = new List<SocketGuild>();
+            //m_client = new DiscordSocketClient();
+            //m_guild = new List<SocketGuild>();
 
-            m_client.Connected += connected;
-            m_client.JoinedGuild += joinedGuild;  // 채널 입장
-            m_client.LeftGuild += leftGuild;    // 채널 퇴장
-            m_client.MessageReceived += messageReceived;    // 메시지 받음
-            m_client.Log += onLog;  // 시스템 로그
+            //m_client.Connected += connected;
+            //m_client.JoinedGuild += joinedGuild;  // 채널 입장
+            //m_client.LeftGuild += leftGuild;    // 채널 퇴장
+            //m_client.MessageReceived += messageReceived;    // 메시지 받음
+            //m_client.Log += onLog;  // 시스템 로그
 
-            m_requestOption = RequestOptions.Default.Clone();
+            //m_requestOption = RequestOptions.Default.Clone();
             //m_requestOption.Timeout = 20 * 1000;    // 20초
             //m_requestOption.UseSystemClock = true;
 

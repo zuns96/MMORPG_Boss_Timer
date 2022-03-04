@@ -41,9 +41,6 @@ namespace MMORPG_Boss_Timer.MasterTable
 
         public MasterTable_BossGenerateData()
         {
-            iniUtil ini = new iniUtil(Define.c_config_path);
-            r_table_id = ini.GetIniValue("google_spread_sheet", "boss_generate_data_sheetId");
-            r_sheet_name = ini.GetIniValue("google_spread_sheet", "boss_generate_data_range");
             loadTable();
         }
 

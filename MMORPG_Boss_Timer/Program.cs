@@ -6,14 +6,13 @@ namespace MMORPG_Boss_Timer
 {
     class Program
     {
-        private static Program s_instance = null;
         private BossTimer m_discordClient = null;
         private Task m_timerTask;
 
         static void Main(string[] args)
         {
-            s_instance = new Program();
-            s_instance.MainAsync().GetAwaiter().GetResult();
+            var instance = new Program();
+            instance.MainAsync().GetAwaiter().GetResult();
         }
 
         public async Task MainAsync()
@@ -61,7 +60,7 @@ namespace MMORPG_Boss_Timer
 
         void UpdateTime()
         {
-            while(true)
+            while (true)
             {
                 m_discordClient.Tick(DateTime.Now);
                 Thread.Sleep(10);

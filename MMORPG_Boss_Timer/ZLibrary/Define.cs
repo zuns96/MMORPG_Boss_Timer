@@ -2,6 +2,6 @@
 {
     public class Define
     {
-        public const string c_config_path = @".\config.ini";
+        public const string c_config_path = @".\config.xml";
     }
 }
