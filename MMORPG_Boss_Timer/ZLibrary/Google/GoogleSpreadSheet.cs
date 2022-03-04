@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using ZLibrary;
-using ZLibrary.Debug;
 
 namespace ZLibrary.Google
 {
@@ -27,12 +26,11 @@ namespace ZLibrary.Google
                 const string credPath = "token.json";
                 const string user = "user";
                 credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                    GoogleClientSecrets.Load(stream).Secrets,
+                    GoogleClientSecrets.FromStream(stream).Secrets,
                     s_scopes,
                     user,
                     CancellationToken.None,
                     new FileDataStore(credPath, true)).Result;
-                Log.WriteLog("Credential file saved to: " + credPath);
             }
 
             // Create Google Sheets API service.
@@ -47,21 +45,19 @@ namespace ZLibrary.Google
 
             Dictionary<int, T> dic = new Dictionary<int, T>();
             IList<IList<Object>> values = response.Values;
-            Log.WriteLog($"Load Table {typeof(T)} 시작");
             if (values != null && values.Count > 0)
             {
                 foreach (var row in values)
                 {
                     T data = Activator.CreateInstance(typeof(T), row) as T;
                     dic.Add(data.PID, data);
-                    Log.WriteLog(data.ToString());
                 }
             }
             else
             {
-                Log.WriteLog("No data found.");
+
             }
-            Log.WriteLog($"Load Table {typeof(T)} 끝");
+
             return dic;
         }
     }

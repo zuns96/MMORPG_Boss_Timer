@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using ZLibrary;
-using ZLibrary.Debug;
 using ZLibrary.Google;
 
 namespace MMORPG_Boss_Timer.MasterTable
@@ -57,8 +55,7 @@ namespace MMORPG_Boss_Timer.MasterTable
             }
             catch (Exception ex)
             {
-                Log.WriteLogException(ex);
-                Log.WriteLog($"Load Table {typeof(MasterTable_BossGenerateData)} 실패");
+                throw ex;
             }
         }
     }

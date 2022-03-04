@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using ZLibrary;
-using ZLibrary.Debug;
 
 namespace Discord_Bot
 {
@@ -43,14 +42,12 @@ namespace Discord_Bot
 
             if (ini == null)
             {
-                Log.WriteLog("config.ini 파일이 존재하지 않습니다.");
                 return;
             }
 
             m_token = ini.GetIniValue("app_info", "token");
             if (string.IsNullOrEmpty(m_token))
             {
-                Log.WriteLog("token이 존재하지 않습니다.");
                 return;
             }
 
@@ -85,32 +82,26 @@ namespace Discord_Bot
         {
             m_guild.Clear();
 
-            Log.WriteLog($"OnConnected 시작");
             if(m_client.Guilds != null)
             {
-                int idx = 0;
                 var itor = m_client.Guilds.GetEnumerator();
                 while(itor.MoveNext())
                 {
                     var guild = itor.Current;
                     m_guild.Add(guild);
-                    Log.WriteLog($"[{idx++}] GuildID : {guild.Id}");
                 }
             }
-            Log.WriteLog($"OnConnected 끝");
             return Task.CompletedTask;
         }
 
         // 채널 입장
         private Task joinedGuild(SocketGuild socketChannel)
         {
-            Log.WriteLog($"{socketChannel.ToString()}({socketChannel.Id}) 채널에 참가했습니다.");
             return Task.CompletedTask;
         }
 
         private Task leftGuild(SocketGuild socketChannel)
         {
-            Log.WriteLog($"{socketChannel.ToString()}({socketChannel.Id}) 채널에서 퇴장했습니다.");
             return Task.CompletedTask;
         }
 
@@ -121,7 +112,6 @@ namespace Discord_Bot
             {
                 if (socketMessage.Author is SocketGuildUser)    //채팅 그룹 유저한테만 반응하기
                 {
-                    Log.WriteLog($"{socketMessage.Author.Username}({socketMessage.Author.Id}) {socketMessage.Content}");
                     SendMessage(socketMessage.Channel, "Hello");
                 }
             }
@@ -136,7 +126,6 @@ namespace Discord_Bot
 
         private Task onLog(LogMessage logMessage)
         {
-            Log.WriteLog($"{logMessage.Source} {logMessage.Message}");
             return Task.CompletedTask;
         }
 
@@ -147,7 +136,7 @@ namespace Discord_Bot
             {
                 m_guild[i].DefaultChannel.SendMessageAsync($"```{msg}```", false, null, m_requestOption).ContinueWith(task =>
                 {
-                    Log.WriteLog($"{m_client.CurrentUser.Username}({m_client.CurrentUser.Id}) {msg}");
+
                 });
             }
         }
@@ -156,7 +145,7 @@ namespace Discord_Bot
         {
             channel.SendMessageAsync($"```{msg}```", false, null, m_requestOption).ContinueWith(task =>
             {
-                Log.WriteLog($"{m_client.CurrentUser.Username}({m_client.CurrentUser.Id}) {msg}");
+
             });
         }
     }

@@ -1,8 +1,6 @@
 ﻿using System;
-//using System.Timers;
 using System.Threading;
 using System.Threading.Tasks;
-using ZLibrary.Debug;
 
 namespace MMORPG_Boss_Timer
 {
@@ -10,7 +8,6 @@ namespace MMORPG_Boss_Timer
     {
         private static Program s_instance = null;
         private BossTimer m_discordClient = null;
-        //private Timer m_timer;
         private Task m_timerTask;
 
         static void Main(string[] args)
@@ -21,8 +18,6 @@ namespace MMORPG_Boss_Timer
 
         public async Task MainAsync()
         {
-            Log.Create();
-
             Console.WriteLine("\t   +++++++++++++++++++++++++++");
             Console.WriteLine("\t :+++++++++++++++++++++++++++++:");
             Console.WriteLine("\t-+++++++++++++++++++++++++++++++-");
@@ -62,10 +57,6 @@ namespace MMORPG_Boss_Timer
                 m_timerTask = new Task(UpdateTime);
                 m_timerTask.Start();
             }
-            //m_timer = new Timer(1000);
-            //m_timer.Elapsed += onTimeEvent;
-            //m_timer.AutoReset = true;
-            //m_timer.Enabled = true;
         }
 
         void UpdateTime()
@@ -73,13 +64,8 @@ namespace MMORPG_Boss_Timer
             while(true)
             {
                 m_discordClient.Tick(DateTime.Now);
-                Thread.Sleep(1000);
+                Thread.Sleep(10);
             }
         }
-
-        //void onTimeEvent(Object source, ElapsedEventArgs e)
-        //{
-        //    m_discordClient.Tick(e.SignalTime);
-        //}
     }
 }

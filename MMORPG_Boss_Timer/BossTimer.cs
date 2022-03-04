@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using Discord;
 using Discord.WebSocket;
 using Discord_Bot;
-using ZLibrary.Debug;
 using Newtonsoft.Json;
 using System.IO;
 using MMORPG_Boss_Timer.BossTimerData;
@@ -95,8 +94,6 @@ namespace MMORPG_Boss_Timer
         {
             if (string.IsNullOrEmpty(command) || command[0] != '.')
                 return;
-
-            Log.WriteLog($"{userName}({userId}) {command}");
 
             var param = command.Split(' ');
             int len = param.Length;
@@ -229,7 +226,6 @@ namespace MMORPG_Boss_Timer
 
         void saveJsonData()
         {
-            Log.WriteLog("Save 시작");
             if (!Directory.Exists(c_json_dir))
             {
                 Directory.CreateDirectory(c_json_dir);
@@ -262,8 +258,6 @@ namespace MMORPG_Boss_Timer
             {
                 streamWriter.Write(jsonString);
             }
-
-            Log.WriteLog("Save 종료");
         }
 
         void loadJsonData()
