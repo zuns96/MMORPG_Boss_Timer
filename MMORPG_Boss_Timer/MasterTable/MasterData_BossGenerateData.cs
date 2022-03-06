@@ -52,7 +52,7 @@ namespace MMORPG_Boss_Timer.MasterTable
             }
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
     }

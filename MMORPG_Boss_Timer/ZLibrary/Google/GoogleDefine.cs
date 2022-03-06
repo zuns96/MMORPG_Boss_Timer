@@ -2,6 +2,6 @@
 {
     class GoogleDefine
     {
-        public const string c_credentials_path = @".\credentials.json";
+        public const string c_credentials_path = "./credentials.json";
     }
 }

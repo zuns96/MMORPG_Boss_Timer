@@ -39,7 +39,7 @@ namespace MMORPG_Boss_Timer
 
             m_discordClient = new BossTimer();
 
-            if (!m_discordClient.SuccessInitialize)
+            if (!m_discordClient.Initialized)
                 return;
 
             await m_discordClient.Start();

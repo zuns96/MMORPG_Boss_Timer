@@ -13,7 +13,7 @@ namespace MMORPG_Boss_Timer
 {
     public class BossTimer : DiscordClient
     {
-        const string c_json_dir = @".\Data";
+        const string c_json_dir = "./Data";
         const string c_json_file_name = "boss_gen_data.json";
 
         int m_count = 0;
@@ -245,7 +245,7 @@ namespace MMORPG_Boss_Timer
                 });
             }
 
-            string filePath = Path.Combine(c_json_dir, c_json_file_name);
+            string filePath = c_json_dir + c_json_file_name;
             if (File.Exists(filePath))
             {
                 string newPath = filePath.Replace(".json", $"_{DateTime.Now.ToString("yyyy-MM-dd HH;mm;ss")}.json");
