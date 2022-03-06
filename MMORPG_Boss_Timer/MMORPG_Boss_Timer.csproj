@@ -29,8 +29,8 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="ZLibrary\" />
     <Folder Include="BossTimerData\" />
     <Folder Include="MasterTable\" />
+    <Folder Include="ZLibrary\XML\" />
   </ItemGroup>
 </Project>

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using ZLibrary;
 using ZLibrary.Google;
 
-namespace MMORPG_Boss_Timer.MasterTable
+namespace Discord_Boss_Timer.MasterTable
 {
     public class MasterTable_BossGenerateData
     {

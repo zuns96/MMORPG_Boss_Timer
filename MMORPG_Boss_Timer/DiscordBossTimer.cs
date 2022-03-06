@@ -3,68 +3,76 @@ using System.Text;
 using System.Collections.Generic;
 using Discord;
 using Discord.WebSocket;
-using Discord_Bot;
+using Discord_Boss_Timer;
 using Newtonsoft.Json;
 using System.IO;
-using MMORPG_Boss_Timer.BossTimerData;
-using MMORPG_Boss_Timer.MasterTable;
+using Discord_Boss_Timer.BossTimerData;
+using Discord_Boss_Timer.MasterTable;
 
-namespace MMORPG_Boss_Timer
+namespace Discord_Boss_Timer
 {
-    public class BossTimer : DiscordClient
+    public interface IDiscordMessageListener
+    {
+        void Tick(DateTime now);
+        void RecvMessage(SocketMessage socketMessage);
+    }
+
+    public class DiscordBossTimer : IDiscordMessageListener
     {
         const string c_json_dir = "./Data";
         const string c_json_file_name = "boss_gen_data.json";
 
         int m_count = 0;
-        List<BossGenerateData> m_lstBossData = null;
+        List<BossGenerateData> _lstBossData = null;
 
-        Dictionary<int, BossGenerateData> m_dicBossData = null;
-        Dictionary<string, int> m_dicBossNameAbbreviationPairPID = null;
+        Dictionary<int, BossGenerateData> _dicBossData = null;
+        Dictionary<string, int> _dicBossNameAbbreviationPairPID = null;
 
-        public BossTimer() : base()
+        public DiscordBossTimer()
         {
-            m_dicBossData = new Dictionary<int, BossGenerateData>();
-            m_dicBossNameAbbreviationPairPID = new Dictionary<string, int>();
+            _dicBossData = new Dictionary<int, BossGenerateData>();
+            _dicBossNameAbbreviationPairPID = new Dictionary<string, int>();
 
             MasterTable_BossGenerateData.Init();
             var itor = MasterTable_BossGenerateData.GetEnumerator();
-            m_lstBossData = new List<BossGenerateData>();
+            _lstBossData = new List<BossGenerateData>();
             while (itor.MoveNext())
             {
                 var data = itor.Current.Value;
                 BossGenerateData bossGenData = new BossGenerateData(data);
-                m_lstBossData.Add(bossGenData);
-                m_dicBossData.Add(data.PID, bossGenData);
-                m_dicBossNameAbbreviationPairPID.Add(data.bossName_Abbreviation, data.PID);
+                _lstBossData.Add(bossGenData);
+                _dicBossData.Add(data.PID, bossGenData);
+                _dicBossNameAbbreviationPairPID.Add(data.bossName_Abbreviation, data.PID);
             }
 
-            m_count = m_lstBossData.Count;
+            m_count = _lstBossData.Count;
             loadJsonData();
+
+            DiscordClient.INSTANCE.AddListenr(this);
         }
 
-        public override void Tick(DateTime dateTime)
+        public void Tick(DateTime now)
         {
             bool saveData = false;
 
-            long nowSec = dateTime.Ticks / TimeSpan.TicksPerSecond;
+            long nowSec = now.Ticks / TimeSpan.TicksPerSecond;
             //Log.WriteLog("Tick===============================================시작");
             for (int i = 0; i < m_count; ++i)
             {
-                var data = m_lstBossData[i];
+                var data = _lstBossData[i];
                 bool left5Min;
                 bool alarm;
-                bool isGen = data.CheckGenTime(dateTime, nowSec, out left5Min, out alarm);
+                bool isGen = data.CheckGenTime(now, nowSec, out left5Min, out alarm);
                 saveData |= isGen;
                 if (alarm)
                 {
                     if (isGen)
                     {
-                        SendMessage($"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 부활했습니다. 다음 젠 타임 : {data.NextGenTime}");
+                        DiscordClient.INSTANCE.SendMessage($"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 부활했습니다. 다음 젠 타임 : {data.NextGenTime}");
                     }
                     else if (left5Min)
                     {
-                        SendMessage($"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 부활까지 5분 남았습니다! 다음 젠 타임 : {data.NextGenTime}");
+                        DiscordClient.INSTANCE.SendMessage($"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 부활까지 5분 남았습니다! 다음 젠 타임 : {data.NextGenTime}");
                     }
                 }
             }
@@ -77,7 +85,7 @@ namespace MMORPG_Boss_Timer
             //Log.WriteLog("Tick===============================================종료");
         }
 
-        protected override void onMessage(SocketMessage socketMessage)
+        public void RecvMessage(SocketMessage socketMessage)
         {
             // 봇인지 아닌지
             if (socketMessage.Source == MessageSource.User)
@@ -107,14 +115,14 @@ namespace MMORPG_Boss_Timer
                         if (len < 2)
                             return;
                         
-                        if (m_dicBossNameAbbreviationPairPID.ContainsKey(param[1]))
+                        if (_dicBossNameAbbreviationPairPID.ContainsKey(param[1]))
                         {
-                            int pid = m_dicBossNameAbbreviationPairPID[param[1]];
-                            if (m_dicBossData.ContainsKey(pid))
+                            int pid = _dicBossNameAbbreviationPairPID[param[1]];
+                            if (_dicBossData.ContainsKey(pid))
                             {
-                                var data = m_dicBossData[pid];
+                                var data = _dicBossData[pid];
                                 data.SetGenTime(DateTime.Now);
-                                SendMessage(socketMessage.Channel, $"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 다음 젠 타임 : {data.NextGenTime}");
+                                DiscordClient.INSTANCE.SendMessage(socketMessage.Channel, $"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 다음 젠 타임 : {data.NextGenTime}");
 
                                 saveJsonData();
                             }
@@ -127,17 +135,17 @@ namespace MMORPG_Boss_Timer
                         if (len < 2)
                             return;
                         
-                        if (m_dicBossNameAbbreviationPairPID.ContainsKey(param[1]))
+                        if (_dicBossNameAbbreviationPairPID.ContainsKey(param[1]))
                         {
-                            int pid = m_dicBossNameAbbreviationPairPID[param[1]];
-                            if (m_dicBossData.ContainsKey(pid))
+                            int pid = _dicBossNameAbbreviationPairPID[param[1]];
+                            if (_dicBossData.ContainsKey(pid))
                             {
-                                var data = m_dicBossData[pid];
+                                var data = _dicBossData[pid];
                                 if (!data.m_masterData.isRandom)
                                     return;
 
                                 //data.SetGenTime(DateTime.Now);
-                                SendMessage(socketMessage.Channel, $"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 다음 젠 타임 : {data.NextGenTime}");
+                                DiscordClient.INSTANCE.SendMessage(socketMessage.Channel, $"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 다음 젠 타임 : {data.NextGenTime}");
                             }
                         }
                     }
@@ -146,7 +154,7 @@ namespace MMORPG_Boss_Timer
                 case ".보탐":
                     {
                         StringBuilder sb = new StringBuilder();
-                        m_lstBossData.Sort((a, b) =>
+                        _lstBossData.Sort((a, b) =>
                         {
                             if (!a.Alarm)
                                 return 1;
@@ -158,13 +166,13 @@ namespace MMORPG_Boss_Timer
 
                         for (int i = 0; i < m_count; ++i)
                         {
-                            var data = m_lstBossData[i];
+                            var data = _lstBossData[i];
                             if (data.Alarm)
                                 sb.AppendLine($"{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation}) : {data.NextGenTime}");
                             else
                                 sb.AppendLine($"{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation}) : 정보 없음");
                         }
-                        SendMessage(socketMessage.Channel, sb.ToString());
+                        DiscordClient.INSTANCE.SendMessage(socketMessage.Channel, sb.ToString());
                     }
                     break;
 
@@ -173,16 +181,16 @@ namespace MMORPG_Boss_Timer
                         if (len < 2)
                             return;
 
-                        if (m_dicBossNameAbbreviationPairPID.ContainsKey(param[1]))
+                        if (_dicBossNameAbbreviationPairPID.ContainsKey(param[1]))
                         {
-                            int pid = m_dicBossNameAbbreviationPairPID[param[1]];
-                            if (m_dicBossData.ContainsKey(pid))
+                            int pid = _dicBossNameAbbreviationPairPID[param[1]];
+                            if (_dicBossData.ContainsKey(pid))
                             {
-                                var data = m_dicBossData[pid];
+                                var data = _dicBossData[pid];
                                 if (data.Alarm)
-                                    SendMessage(socketMessage.Channel, $"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 다음 젠 타임 : {data.NextGenTime}");
+                                    DiscordClient.INSTANCE.SendMessage(socketMessage.Channel, $"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 다음 젠 타임 : {data.NextGenTime}");
                                 else
-                                    SendMessage(socketMessage.Channel, $"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 다음 젠 타임 : 정보 없음");
+                                    DiscordClient.INSTANCE.SendMessage(socketMessage.Channel, $"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 다음 젠 타임 : 정보 없음");
                             }
                         }
                     }
@@ -192,20 +200,20 @@ namespace MMORPG_Boss_Timer
                         if (len < 2)
                             return;
 
-                        if (m_dicBossNameAbbreviationPairPID.ContainsKey(param[1]))
+                        if (_dicBossNameAbbreviationPairPID.ContainsKey(param[1]))
                         {
-                            int pid = m_dicBossNameAbbreviationPairPID[param[1]];
-                            if (m_dicBossData.ContainsKey(pid))
+                            int pid = _dicBossNameAbbreviationPairPID[param[1]];
+                            if (_dicBossData.ContainsKey(pid))
                             {
-                                var data = m_dicBossData[pid];
+                                var data = _dicBossData[pid];
                                 if (data.Alarm)
                                 {
                                     data.EnableAlram(false);
-                                    SendMessage(socketMessage.Channel, $"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 숨김 처리 완료하였습니다.");
+                                    DiscordClient.INSTANCE.SendMessage(socketMessage.Channel, $"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 숨김 처리 완료하였습니다.");
                                 }
                                 else
                                 {
-                                    SendMessage(socketMessage.Channel, $"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 이미 숨김 처리됐습니다.");
+                                    DiscordClient.INSTANCE.SendMessage(socketMessage.Channel, $"[{data.m_masterData.bossName}({data.m_masterData.bossName_Abbreviation})] 이미 숨김 처리됐습니다.");
                                 }
                             }
                         }
@@ -221,7 +229,7 @@ namespace MMORPG_Boss_Timer
 
         void RecvUnknownCommand(SocketMessage socketMessage, string command)
         {
-            SendMessage(socketMessage.Channel, $"알 수 없는 명령어 입니다.({command})\n명령어 목록:\n.보탐 : 모든 보스의 젠 타임 확인\n.컷 보스이름(약자) : 해당 보스의 젠 타임을 현재 시간으로 갱신\n.시간 보스이름(약자) : 해당 보스의 젠 타임을 확인");
+            DiscordClient.INSTANCE.SendMessage(socketMessage.Channel, $"알 수 없는 명령어 입니다.({command})\n명령어 목록:\n.보탐 : 모든 보스의 젠 타임 확인\n.컷 보스이름(약자) : 해당 보스의 젠 타임을 현재 시간으로 갱신\n.시간 보스이름(약자) : 해당 보스의 젠 타임을 확인");
         }
 
         void saveJsonData()
@@ -232,10 +240,10 @@ namespace MMORPG_Boss_Timer
             }
 
             List<BossGenerateSaveData> lstSaveData = new List<BossGenerateSaveData>();
-            var itor = m_dicBossData.GetEnumerator();
+            var itor = _dicBossData.GetEnumerator();
             for(int i = 0; i < m_count; ++i)
             { 
-                var data = m_lstBossData[i];
+                var data = _lstBossData[i];
                 lstSaveData.Add(new BossGenerateSaveData()
                 {
                     pid = data.m_masterData.PID,
@@ -278,9 +286,9 @@ namespace MMORPG_Boss_Timer
             int count = lstSaveData.Count;
             for (int i = 0; i < count; ++i)
             {
-                if(m_dicBossData.ContainsKey(lstSaveData[i].pid))
+                if(_dicBossData.ContainsKey(lstSaveData[i].pid))
                 {
-                    m_dicBossData[lstSaveData[i].pid].LoadData(lstSaveData[i], dtNow);
+                    _dicBossData[lstSaveData[i].pid].LoadData(lstSaveData[i], dtNow);
                 }
             }
         }

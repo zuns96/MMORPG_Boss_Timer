@@ -1,7 +1,7 @@
 ﻿using System;
-using MMORPG_Boss_Timer.MasterTable;
+using Discord_Boss_Timer.MasterTable;
 
-namespace MMORPG_Boss_Timer.BossTimerData
+namespace Discord_Boss_Timer.BossTimerData
 {
     public class BossGenerateData
     {

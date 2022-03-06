@@ -1,44 +1,55 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Threading.Tasks;
 using System.Xml;
 using Discord;
 using Discord.WebSocket;
 
-namespace Discord_Bot
+namespace Discord_Boss_Timer
 {
+    public class TimeOutLock : IDisposable
+    {
+        private Object _lockObject = null;
+        private int _timeout = 20000;
+
+        public TimeOutLock(Object obj)
+        {
+            _lockObject = obj;
+        }
+
+        public TimeOutLock Lock()
+        {
+            if (System.Threading.Monitor.TryEnter(_lockObject, _timeout))
+                return new TimeOutLock(_lockObject);
+            else
+                throw new System.TimeoutException("failed to acquire the lock");
+        }
+
+        public void Dispose()
+        {
+            _lockObject = null;
+        }
+    }
+
     public class DiscordClient
     {
-        protected DiscordSocketClient m_client = null;
+
+        public static readonly DiscordClient INSTANCE = new DiscordClient();
+
+        protected DiscordSocketClient _client = null;
         private RequestOptions m_requestOption = null;
 
-        private string m_appName = null;
-        private string m_token = null;
-        protected bool m_initialized = false;
-        private List<SocketGuild> m_guild = null;
+        private string _token = null;
+        protected bool _initialized = false;
+        private List<SocketGuild> _guilds = null;
+        private ConcurrentBag<IDiscordMessageListener> _listeners = null;
+        private TimeOutLock @lock = new TimeOutLock(new object());
 
-        public bool Initialized { get { return m_initialized; } }
+        public bool Initialized { get { return _initialized; } }
 
-        static public void Release(ref DiscordClient discordClient)
-        {
-            if(discordClient != null)
-            {
-                discordClient.release();
-                discordClient = null;
-            }
-        }
-
-        void release()
-        {
-            m_guild.Clear();
-            m_guild = null;
-
-            m_client.LogoutAsync();
-            m_client = null;
-        }
-
-        public DiscordClient()
+        private DiscordClient()
         {
             XmlNodeList xmlNodes = null;
             using (var text = File.OpenText(Define.c_config_path))
@@ -52,52 +63,48 @@ namespace Discord_Bot
                 xmlDoc.LoadXml(text.ReadToEnd());
                 xmlNodes = xmlDoc.GetElementsByTagName("config");
             }
+
             var e = xmlNodes[0].SelectSingleNode("app_info");
-            m_appName = e.Attributes["AppName"].Value;
-            m_token = e.Attributes["token"].Value;
-            if (string.IsNullOrEmpty(m_token))
+            _token = e.Attributes["token"].Value;
+            if (string.IsNullOrEmpty(_token))
             {
                 return;
             }
 
-            m_client = new DiscordSocketClient();
-            m_guild = new List<SocketGuild>();
+            _client = new DiscordSocketClient();
+            _guilds = new List<SocketGuild>();
+            _listeners = new ConcurrentBag<IDiscordMessageListener>();
 
-            m_client.Connected += connected;
-            m_client.JoinedGuild += joinedGuild;  // 채널 입장
-            m_client.LeftGuild += leftGuild;    // 채널 퇴장
-            m_client.MessageReceived += messageReceived;    // 메시지 받음
-            m_client.Log += onLog;  // 시스템 로그
+            _client.Connected += connected;
+            _client.JoinedGuild += joinedGuild;  // 채널 입장
+            _client.LeftGuild += leftGuild;    // 채널 퇴장
+            _client.MessageReceived += messageReceived;    // 메시지 받음
+            _client.Log += onLog;  // 시스템 로그
 
             m_requestOption = RequestOptions.Default.Clone();
             m_requestOption.Timeout = 20 * 1000;    // 20초
             m_requestOption.UseSystemClock = true;
 
-            m_initialized = true;
+            _initialized = true;
         }
 
         public async Task Start()
         {
-            await m_client.LoginAsync(TokenType.Bot, m_token);
-            await m_client.StartAsync();
-        }
-
-        public virtual void Tick(DateTime dateTime)
-        {
-            
+            await _client.LoginAsync(TokenType.Bot, _token);
+            await _client.StartAsync();
         }
 
         private Task connected()
         {
-            m_guild.Clear();
+            _guilds.Clear();
 
-            if(m_client.Guilds != null)
+            if(_client.Guilds != null)
             {
-                var itor = m_client.Guilds.GetEnumerator();
+                var itor = _client.Guilds.GetEnumerator();
                 while(itor.MoveNext())
                 {
                     var guild = itor.Current;
-                    m_guild.Add(guild);
+                    _guilds.Add(guild);
                 }
             }
             return Task.CompletedTask;
@@ -106,28 +113,35 @@ namespace Discord_Bot
         // 채널 입장
         private Task joinedGuild(SocketGuild socketChannel)
         {
+            using(@lock)
+            {
+                int idx = _guilds.FindIndex(item => item.Id == socketChannel.Id);
+                if (idx >= 0)
+                {
+                    _guilds.RemoveAt(idx);
+                }
+                _guilds.Add(socketChannel);
+            }
+
             return Task.CompletedTask;
         }
 
         private Task leftGuild(SocketGuild socketChannel)
         {
-            return Task.CompletedTask;
-        }
-
-        protected virtual void onMessage(SocketMessage socketMessage)
-        {
-            // 봇인지 아닌지
-            if (socketMessage.Source == MessageSource.User)
+            using(@lock)
             {
-                if (socketMessage.Author is SocketGuildUser)    //채팅 그룹 유저한테만 반응하기
+                int idx = _guilds.FindIndex(item => item.Id == socketChannel.Id);
+                if (idx >= 0)
                 {
-                    SendMessage(socketMessage.Channel, "Hello");
+                    _guilds.RemoveAt(idx);
                 }
             }
+
+            return Task.CompletedTask;
         }
         
         // 메시지 받음
-        protected Task messageReceived(SocketMessage socketMessage)
+        private Task messageReceived(SocketMessage socketMessage)
         {
             onMessage(socketMessage);
             return Task.CompletedTask;
@@ -139,20 +153,43 @@ namespace Discord_Bot
             return Task.CompletedTask;
         }
 
-        protected void SendMessage(string msg)
+        public void SendMessage(string msg)
         {
-            int count = m_guild.Count;
-            for(int i = 0; i < count; ++i)
+            using (@lock)
             {
-                var task = m_guild[i].DefaultChannel.SendMessageAsync($"```{msg}```", false, null, m_requestOption);
-                task.Start();
+                foreach (var guild in _guilds)
+                {
+                    var task = guild.DefaultChannel.SendMessageAsync($"```{msg}```", false, null, m_requestOption);
+                    task.Wait();
+                }
             }
         }
 
-        protected void SendMessage(IMessageChannel channel, string msg)
+        public void SendMessage(IMessageChannel channel, string msg)
         {
             var task = channel.SendMessageAsync($"```{msg}```", false, null, m_requestOption);
-            task.Start();
+            task.Wait();
+        }
+
+        public void AddListenr(IDiscordMessageListener listener)
+        {
+            _listeners.Add(listener);
+        }
+
+        private void onMessage(SocketMessage socketMessage)
+        {
+            foreach(var entitiy in _listeners)
+            {
+                entitiy.RecvMessage(socketMessage);
+            }
+        }
+
+        public void Tick(DateTime now)
+        {
+            foreach(var entitiy in _listeners)
+            {
+                entitiy.Tick(now);
+            }
         }
     }
 }

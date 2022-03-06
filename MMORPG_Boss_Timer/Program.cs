@@ -1,24 +1,23 @@
-﻿using System;
+﻿using Discord_Boss_Timer;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MMORPG_Boss_Timer
+namespace Discord_Boss_Timer
 {
-    class Program
+    public static class Program
     {
-        private BossTimer m_discordClient = null;
-        private Task m_timerTask;
-
         static void Main(string[] args)
         {
-            var instance = new Program();
-            instance.MainAsync().GetAwaiter().GetResult();
+            var task = MainAsync();
+            var awaiter = task.GetAwaiter();
+            awaiter.GetResult();
         }
 
-        public async Task MainAsync()
+        public static async Task MainAsync()
         {
-            Console.WriteLine("\t   +++++++++++++++++++++++++++");
-            Console.WriteLine("\t :+++++++++++++++++++++++++++++:");
+            Console.WriteLine("\t   +++++++++++++++++++++++++++   ");
+            Console.WriteLine("\t :+++++++++++++++++++++++++++++: ");
             Console.WriteLine("\t-+++++++++++++++++++++++++++++++-");
             Console.WriteLine("\t:+++++++++++++++++++++++++++++++:");
             Console.WriteLine("\t:+++++++++++++++++++++++++++++++:");
@@ -37,32 +36,20 @@ namespace MMORPG_Boss_Timer
             Console.WriteLine("\t                            ./++:");
             Console.WriteLine("\t                              .::");
 
-            m_discordClient = new BossTimer();
+            await DiscordClient.INSTANCE.Start();
 
-            if (!m_discordClient.Initialized)
-                return;
+            new DiscordBossTimer();
 
-            await m_discordClient.Start();
-
-            setTimer();
+            UpdateTime();
 
             await Task.Delay(-1);
         }
 
-        void setTimer()
-        {
-            if (m_timerTask == null)
-            {
-                m_timerTask = new Task(UpdateTime);
-                m_timerTask.Start();
-            }
-        }
-
-        void UpdateTime()
+        private static void UpdateTime()
         {
             while (true)
             {
-                m_discordClient.Tick(DateTime.Now);
+                DiscordClient.INSTANCE.Tick(DateTime.UtcNow);
                 Thread.Sleep(10);
             }
         }

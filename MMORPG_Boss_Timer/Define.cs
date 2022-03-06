@@ -1,4 +1,4 @@
-﻿namespace Discord_Bot
+﻿namespace Discord_Boss_Timer
 {
     public class Define
     {
